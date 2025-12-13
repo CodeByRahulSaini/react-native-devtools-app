@@ -1,0 +1,460 @@
+/**
+ * Copyright 2025 Rahul Saini. All rights reserved.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * Copyright 2024 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+/* ============================================
+   CSS Variables
+   ============================================ */
+:root {
+  --color-bg-primary: #0d1117;
+  --color-bg-secondary: #161b22;
+  --color-bg-tertiary: #21262d;
+  --color-bg-hover: #30363d;
+  
+  --color-border: #30363d;
+  --color-border-hover: #8b949e;
+  
+  --color-text-primary: #e6edf3;
+  --color-text-secondary: #8b949e;
+  --color-text-muted: #6e7681;
+  
+  --color-accent: #58a6ff;
+  --color-accent-emphasis: #1f6feb;
+  --color-accent-muted: rgba(56, 139, 253, 0.15);
+  
+  --color-react: #61dafb;
+  --color-react-muted: rgba(97, 218, 251, 0.15);
+  
+  --color-success: #3fb950;
+  --color-warning: #d29922;
+  --color-danger: #f85149;
+  
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}
+
+/* ============================================
+   Reset & Base
+   ============================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   App Layout
+   ============================================ */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 100%;
+  padding: var(--spacing-lg);
+}
+
+@media (max-width: 400px) {
+  .app {
+    padding: var(--spacing-md);
+  }
+}
+
+/* ============================================
+   Header
+   ============================================ */
+.header {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+  flex-shrink: 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  color: var(--color-react);
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+@media (max-width: 360px) {
+  .logo-text {
+    font-size: 1.125rem;
+  }
+  
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.subtitle {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+/* ============================================
+   Port Configuration
+   ============================================ */
+.port-config {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  flex-shrink: 0;
+}
+
+.port-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.port-input-group {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.port-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  transition: border-color var(--transition-fast);
+}
+
+.port-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-muted);
+}
+
+.port-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-accent-muted);
+}
+
+.btn-icon {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
+  color: var(--color-text-primary);
+}
+
+.btn-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: var(--spacing-md);
+  background: var(--color-react);
+  color: var(--color-bg-primary);
+  font-weight: 600;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #7ce3ff;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+/* ============================================
+   Targets Container
+   ============================================ */
+.targets-container {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: var(--spacing-lg);
+  min-height: 120px;
+}
+
+/* ============================================
+   Loading State
+   ============================================ */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-secondary);
+  gap: var(--spacing-md);
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-bg-tertiary);
+  border-top-color: var(--color-react);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-md);
+}
+
+.empty-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.empty-description {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  max-width: 280px;
+}
+
+/* ============================================
+   Target Cards
+   ============================================ */
+.target-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.target-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.target-card:hover {
+  background: var(--color-react-muted);
+  border-color: var(--color-react);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.target-card:active {
+  transform: translateY(0);
+}
+
+.target-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.target-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+.target-port {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: var(--color-react);
+  color: var(--color-bg-primary);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.target-description {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  word-break: break-word;
+}
+
+.target-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.target-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.target-meta-item .icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* ============================================
+   Footer
+   ============================================ */
+.footer {
+  flex-shrink: 0;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ============================================
+   Scrollbar
+   ============================================ */
+.targets-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.targets-container::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+  border-radius: 4px;
+}
+
+.targets-container::-webkit-scrollbar-thumb {
+  background: var(--color-bg-hover);
+  border-radius: 4px;
+}
+
+.targets-container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-hover);
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+@media (max-height: 500px) {
+  .header {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .port-config {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .targets-container {
+    margin-bottom: var(--spacing-md);
+  }
+}
+
+@media (min-width: 600px) {
+  .app {
+    max-width: 540px;
+    margin: 0 auto;
+  }
+}
+
