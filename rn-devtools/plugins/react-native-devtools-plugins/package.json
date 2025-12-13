@@ -1,0 +1,31 @@
+{
+  "name": "react-native-devtools-plugins",
+  "version": "0.1.0",
+  "description": "Plugin infrastructure for React Native DevTools - debug Redux, Apollo, Network, and more",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf lib",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "react-native",
+    "devtools",
+    "debugging",
+    "network",
+    "plugins"
+  ],
+  "author": "Rahul Saini",
+  "license": "BSD-3-Clause",
+  "peerDependencies": {
+    "react-native": ">=0.70.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
+
