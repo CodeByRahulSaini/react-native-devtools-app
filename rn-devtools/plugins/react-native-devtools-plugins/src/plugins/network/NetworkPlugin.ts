@@ -146,6 +146,31 @@ export class NetworkPlugin implements Plugin {
     return result;
   }
 
+  private serializeRequestBody(body: BodyInit | Document | null | undefined): string | undefined {
+    if (!body) {
+      return undefined;
+    }
+    if (typeof body === 'string') {
+      return body;
+    }
+    if (body instanceof ArrayBuffer) {
+      return '[ArrayBuffer]';
+    }
+    if (body instanceof FormData) {
+      return '[FormData]';
+    }
+    if (typeof Document !== 'undefined' && body instanceof Document) {
+      return '[Document]';
+    }
+    if (body instanceof Blob) {
+      return `[Blob: ${body.size} bytes]`;
+    }
+    if (body instanceof URLSearchParams) {
+      return body.toString();
+    }
+    return '[Binary]';
+  }
+
   // ============================================
   // Fetch interception
   // ============================================
@@ -175,18 +200,7 @@ export class NetworkPlugin implements Plugin {
       // Extract request details
       const method = init?.method ?? 'GET';
       const headers = plugin.headersToRecord(new Headers(init?.headers));
-      let body: string | undefined;
-      if (init?.body) {
-        if (typeof init.body === 'string') {
-          body = init.body;
-        } else if (init.body instanceof ArrayBuffer) {
-          body = '[ArrayBuffer]';
-        } else if (init.body instanceof FormData) {
-          body = '[FormData]';
-        } else {
-          body = '[Binary]';
-        }
-      }
+      const body = plugin.serializeRequestBody(init?.body);
 
       const request: NetworkRequest = {
         id: requestId,
@@ -309,20 +323,7 @@ export class NetworkPlugin implements Plugin {
       this._devtools_id = requestId;
       this._devtools_startTime = Date.now();
 
-      let bodyStr: string | undefined;
-      if (body) {
-        if (typeof body === 'string') {
-          bodyStr = body;
-        } else if (body instanceof FormData) {
-          bodyStr = '[FormData]';
-        } else if (body instanceof ArrayBuffer) {
-          bodyStr = '[ArrayBuffer]';
-        } else if (body instanceof Document) {
-          bodyStr = '[Document]';
-        } else {
-          bodyStr = '[Binary]';
-        }
-      }
+      const bodyStr = plugin.serializeRequestBody(body);
 
       const request: NetworkRequest = {
         id: requestId,
@@ -357,12 +358,33 @@ export class NetworkPlugin implements Plugin {
             }
           }
 
+          // Get response body based on responseType
+          let responseBody: string | undefined;
+          try {
+            const responseType = this.responseType;
+            if (responseType === '' || responseType === 'text') {
+              responseBody = this.responseText;
+            } else if (responseType === 'json') {
+              responseBody = JSON.stringify(this.response, null, 2);
+            } else if (responseType === 'blob') {
+              responseBody = `[Blob: ${(this.response as Blob)?.size ?? 0} bytes]`;
+            } else if (responseType === 'arraybuffer') {
+              responseBody = `[ArrayBuffer: ${(this.response as ArrayBuffer)?.byteLength ?? 0} bytes]`;
+            } else if (responseType === 'document') {
+              responseBody = '[Document]';
+            } else {
+              responseBody = `[${responseType}]`;
+            }
+          } catch {
+            responseBody = '[Unable to read response]';
+          }
+
           const response: NetworkResponse = {
             id: this._devtools_id!,
             status: this.status,
             statusText: this.statusText,
             headers: responseHeaders,
-            body: plugin.truncateBody(this.responseText),
+            body: plugin.truncateBody(responseBody),
             endTime,
             duration: endTime - startTime,
           };
@@ -370,7 +392,7 @@ export class NetworkPlugin implements Plugin {
           plugin.sendEvent('response', response as unknown as JSONValue);
         } else {
           plugin.sendEvent('error', {
-            id: this._devtools_id,
+            id: this._devtools_id!,
             error: 'Request failed',
             endTime,
             duration: endTime - startTime,

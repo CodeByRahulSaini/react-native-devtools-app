@@ -1,0 +1,309 @@
+// Copyright 2025 Rahul Saini. All rights reserved.
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// Copyright 2024 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+import type * as Common from '../../../../front_end/core/common/common.js';
+import * as SDK from '../../../../front_end/core/sdk/sdk.js';
+
+type JSONValue = null | string | number | boolean | {[key: string]: JSONValue} | JSONValue[];
+type DomainName = string;
+type DomainMessageListener = (message: JSONValue) => void;
+
+type BindingCalledEventTargetEvent = Common.EventTarget.EventTargetEvent<SDK.RuntimeModel.EventTypes[SDK.RuntimeModel.Events.BindingCalled]>;
+type ContextDestroyedEvent = Common.EventTarget.EventTargetEvent<SDK.RuntimeModel.EventTypes[SDK.RuntimeModel.Events.ExecutionContextDestroyed]>;
+type ContextCreatedEvent = Common.EventTarget.EventTargetEvent<SDK.RuntimeModel.EventTypes[SDK.RuntimeModel.Events.ExecutionContextCreated]>;
+
+// Hermes doesn't support Workers API yet, so there is a single execution context at the moment
+const MAIN_EXECUTION_CONTEXT_NAME = 'main';
+const RUNTIME_GLOBAL = '__FUSEBOX_PLUGINS_DISPATCHER__';
+
+export const enum Events {
+  BACKEND_EXECUTION_CONTEXT_CREATED = 'BackendExecutionContextCreated',
+  BACKEND_EXECUTION_CONTEXT_UNAVAILABLE = 'BackendExecutionContextUnavailable',
+  BACKEND_EXECUTION_CONTEXT_DESTROYED = 'BackendExecutionContextDestroyed',
+}
+
+export interface EventTypes {
+  [Events.BACKEND_EXECUTION_CONTEXT_CREATED]: void;
+  [Events.BACKEND_EXECUTION_CONTEXT_UNAVAILABLE]: string;
+  [Events.BACKEND_EXECUTION_CONTEXT_DESTROYED]: void;
+}
+
+/**
+ * PluginsBindingsModel - Handles CDP communication with the plugins dispatcher.
+ *
+ * This model communicates with `__FUSEBOX_PLUGINS_DISPATCHER__` in the React Native app
+ * to route messages between DevTools panels and their corresponding plugins.
+ *
+ * Communication flow:
+ * 1. DevTools calls Runtime.addBinding(BINDING_NAME) to receive messages from plugins
+ * 2. Plugins send messages by calling the binding function
+ * 3. DevTools sends commands via Runtime.evaluate calling sendMessage()
+ */
+export class PluginsBindingsModel extends SDK.SDKModel.SDKModel<EventTypes> {
+  private readonly domainToListeners = new Map<DomainName, Set<DomainMessageListener>>();
+  private messagingBindingName: string | null = null;
+  private enabled = false;
+  private fuseboxDispatcherIsInitialized = false;
+  private readonly domainToMessageQueue = new Map<DomainName, JSONValue[]>();
+
+  override dispose(): void {
+    this.domainToListeners.clear();
+    this.domainToMessageQueue.clear();
+
+    const runtimeModel = this.target().model(SDK.RuntimeModel.RuntimeModel);
+    runtimeModel?.removeEventListener(SDK.RuntimeModel.Events.BindingCalled, this.bindingCalled, this);
+    runtimeModel?.removeEventListener(
+        SDK.RuntimeModel.Events.ExecutionContextCreated, this.onExecutionContextCreated, this);
+    runtimeModel?.removeEventListener(
+        SDK.RuntimeModel.Events.ExecutionContextDestroyed, this.onExecutionContextDestroyed, this);
+  }
+
+  private bindingCalled(event: BindingCalledEventTargetEvent): void {
+    // If binding name is not initialized, then we failed to get its name
+    if (this.messagingBindingName === null || event.data.name !== this.messagingBindingName) {
+      return;
+    }
+
+    const serializedMessage = event.data.payload;
+    let parsedMessage = null;
+
+    try {
+      parsedMessage = JSON.parse(serializedMessage);
+    } catch (err) {
+      throw new Error('Failed to parse bindingCalled event payload', {cause: err});
+    }
+
+    if (parsedMessage) {
+      const domainName = parsedMessage.domain;
+
+      if (this.fuseboxDispatcherIsInitialized) {
+        // This should never happen.
+        // It is expected that messages are flushed out right after we notify listeners with BackendExecutionContextCreated event
+        if (!this.isDomainMessagesQueueEmpty(domainName)) {
+          throw new Error(`Attempted to send a message to domain ${domainName} while queue is not empty`);
+        }
+
+        this.dispatchMessageToDomainEventListeners(domainName, parsedMessage.message);
+      } else {
+        // This could happen when backend is already sending messages via binding
+        // But PluginsBindingsModel is busy executing async tasks
+        this.queueMessageForDomain(domainName, parsedMessage.message);
+      }
+    }
+  }
+
+  private queueMessageForDomain(domainName: DomainName, message: JSONValue): void {
+    let queue = this.domainToMessageQueue.get(domainName);
+    if (!queue) {
+      queue = [];
+      this.domainToMessageQueue.set(domainName, queue);
+    }
+
+    queue.push(message);
+  }
+
+  private flushOutDomainMessagesQueues(): void {
+    for (const [domainName, queue] of this.domainToMessageQueue.entries()) {
+      if (queue.length === 0) {
+        continue;
+      }
+
+      for (const message of queue) {
+        this.dispatchMessageToDomainEventListeners(domainName, message);
+      }
+      queue.splice(0, queue.length);
+    }
+  }
+
+  private isDomainMessagesQueueEmpty(domainName: DomainName): boolean {
+    const queue = this.domainToMessageQueue.get(domainName);
+    return queue === undefined || queue.length === 0;
+  }
+
+  subscribeToDomainMessages(domainName: DomainName, listener: DomainMessageListener): void {
+    let listeners = this.domainToListeners.get(domainName);
+    if (!listeners) {
+        listeners = new Set();
+        this.domainToListeners.set(domainName, listeners);
+    }
+
+    listeners.add(listener);
+  }
+
+  unsubscribeFromDomainMessages(domainName: DomainName, listener: DomainMessageListener): void {
+    const listeners = this.domainToListeners.get(domainName);
+    if (!listeners) {
+      return;
+    }
+
+    listeners.delete(listener);
+  }
+
+  private dispatchMessageToDomainEventListeners(domainName: DomainName, message: JSONValue): void {
+    const listeners = this.domainToListeners.get(domainName);
+    if (!listeners) {
+      // No subscriptions, no need to throw, just don't notify.
+      return;
+    }
+
+    const errors = [];
+    for (const listener of listeners) {
+      try {
+        listener(message);
+      } catch (e) {
+        errors.push(e);
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new AggregateError(
+        errors,
+        `Error occurred in PluginsBindingsModel while calling event listeners for domain ${domainName}`,
+      );
+    }
+  }
+
+  async initializeDomain(domainName: DomainName): Promise<void> {
+    const runtimeModel = this.target().model(SDK.RuntimeModel.RuntimeModel);
+    if (!runtimeModel) {
+      throw new Error(`Failed to initialize domain ${domainName} for PluginsBindingsModel: runtime model is not available`);
+    }
+
+    await runtimeModel.agent.invoke_evaluate({expression: `void ${RUNTIME_GLOBAL}.initializeDomain('${domainName}')`});
+  }
+
+  async sendMessage(domainName: DomainName, message: JSONValue): Promise<void> {
+    // If Execution Context is destroyed, do not attempt to send a message (evaluate anything)
+    if (!this.fuseboxDispatcherIsInitialized) {
+      return;
+    }
+
+    const runtimeModel = this.target().model(SDK.RuntimeModel.RuntimeModel);
+    if (!runtimeModel) {
+      throw new Error(`Failed to send message from PluginsBindingsModel for domain ${domainName}: runtime model is not available`);
+    }
+
+    const serializedMessage = JSON.stringify(message);
+    await runtimeModel.agent.invoke_evaluate({expression: `${RUNTIME_GLOBAL}.sendMessage('${domainName}', '${serializedMessage}')`});
+  }
+
+  async enable(): Promise<void> {
+    if (this.enabled) {
+      throw new Error('PluginsBindingsModel is already enabled');
+    }
+
+    const runtimeModel = this.target().model(SDK.RuntimeModel.RuntimeModel);
+    if (!runtimeModel) {
+      throw new Error('Failed to enable PluginsBindingsModel: runtime model is not available');
+    }
+
+    await this.waitForFuseboxDispatcherToBeInitialized()
+      .then(() => runtimeModel.agent.invoke_evaluate({expression: `${RUNTIME_GLOBAL}.BINDING_NAME`}))
+      .then(response => {
+        if (response.exceptionDetails) {
+          throw new Error('Failed to get binding name for PluginsBindingsModel on a global: ' + response.exceptionDetails.text);
+        }
+
+        if (response.result.value === null || response.result.value === undefined) {
+          throw new Error('Failed to get binding name for PluginsBindingsModel on a global: returned value is ' + String(response.result.value));
+        }
+
+        if (response.result.value === '') {
+          throw new Error('Failed to get binding name for PluginsBindingsModel on a global: returned value is an empty string');
+        }
+
+        return response.result.value;
+      })
+      .then(bindingName => {
+        this.messagingBindingName = bindingName;
+        runtimeModel.addEventListener(SDK.RuntimeModel.Events.BindingCalled, this.bindingCalled, this);
+
+        return runtimeModel.agent.invoke_addBinding({name: bindingName});
+      })
+      .then(response => {
+        const possiblyError = response.getError();
+        if (possiblyError) {
+          throw new Error('Failed to add binding for PluginsBindingsModel: ' + possiblyError);
+        }
+
+        this.enabled = true;
+        this.initializeExecutionContextListeners();
+      });
+  }
+
+  isEnabled(): boolean {
+    return this.enabled;
+  }
+
+  private initializeExecutionContextListeners(): void {
+    const runtimeModel = this.target().model(SDK.RuntimeModel.RuntimeModel);
+    if (!runtimeModel) {
+      throw new Error('Failed to initialize execution context listeners for PluginsBindingsModel: runtime model is not available');
+    }
+
+    runtimeModel.addEventListener(SDK.RuntimeModel.Events.ExecutionContextCreated, this.onExecutionContextCreated, this);
+    runtimeModel.addEventListener(SDK.RuntimeModel.Events.ExecutionContextDestroyed, this.onExecutionContextDestroyed, this);
+  }
+
+  private onExecutionContextCreated({data: executionContext}: ContextCreatedEvent): void {
+    if (executionContext.name !== MAIN_EXECUTION_CONTEXT_NAME) {
+      return;
+    }
+
+    void this.waitForFuseboxDispatcherToBeInitialized()
+        .then(() => {
+          this.dispatchEventToListeners(Events.BACKEND_EXECUTION_CONTEXT_CREATED);
+          this.flushOutDomainMessagesQueues();
+        })
+        .catch(
+            (error: Error) =>
+                this.dispatchEventToListeners(Events.BACKEND_EXECUTION_CONTEXT_UNAVAILABLE, error.message));
+  }
+
+  private onExecutionContextDestroyed({data: executionContext}: ContextDestroyedEvent): void {
+    if (executionContext.name !== MAIN_EXECUTION_CONTEXT_NAME) {
+      return;
+    }
+
+    this.fuseboxDispatcherIsInitialized = false;
+    this.dispatchEventToListeners(Events.BACKEND_EXECUTION_CONTEXT_DESTROYED);
+  }
+
+  private async waitForFuseboxDispatcherToBeInitialized(attempt = 1): Promise<void> {
+    // Ideally, this should not be polling, but rather one `Runtime.evaluate` request with `awaitPromise` option
+    // We need to support it in Hermes first, then we can migrate this to awaitPromise
+    if (attempt >= 20) { // ~5 seconds
+      throw new Error('Failed to wait for initialization: it took too long');
+    }
+
+    const runtimeModel = this.target().model(SDK.RuntimeModel.RuntimeModel);
+    if (!runtimeModel) {
+      throw new Error('Failed to wait for Plugins dispatcher initialization: runtime model is not available');
+    }
+
+    await runtimeModel.agent.invoke_evaluate({
+      expression: `globalThis.${RUNTIME_GLOBAL} != undefined`,
+      returnByValue: true,
+    })
+      .then(response => {
+        if (response.exceptionDetails) {
+          throw new Error('Failed to wait for Plugins dispatcher initialization: ' + response.exceptionDetails.text);
+        }
+
+        if (response.result.value === false) {
+          // Wait for 250 ms and restart
+          return new Promise(resolve => setTimeout(resolve, 250)).then(() => this.waitForFuseboxDispatcherToBeInitialized(attempt + 1));
+        }
+
+        this.fuseboxDispatcherIsInitialized = true;
+        return;
+      });
+  }
+}
+
+SDK.SDKModel.SDKModel.register(PluginsBindingsModel, {capabilities: SDK.Target.Capability.JS, autostart: false});
+
+

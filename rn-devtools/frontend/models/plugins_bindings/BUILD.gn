@@ -1,0 +1,37 @@
+# Copyright 2025 Rahul Saini. All rights reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright 2024 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("../../../../scripts/build/ninja/devtools_entrypoint.gni")
+import("../../../../scripts/build/ninja/devtools_module.gni")
+import("../../../../front_end/models/visibility.gni")
+
+devtools_module("plugins_bindings") {
+  sources = [
+    "PluginsBindingsModel.ts",
+  ]
+
+  deps = [
+    "../../../../front_end/core/common:bundle",
+    "../../../../front_end/core/sdk:bundle",
+  ]
+}
+
+devtools_entrypoint("bundle") {
+  entrypoint = "plugins_bindings.ts"
+
+  deps = [
+    ":plugins_bindings",
+  ]
+
+  visibility = [
+    ":*",
+    "../../panels/rn_network/*",
+  ]
+
+  visibility += devtools_models_visibility
+}
+
+

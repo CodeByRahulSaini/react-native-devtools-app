@@ -24,6 +24,7 @@
   },
   "include": [
     "front_end/",
+    "rn-devtools/frontend/",
     "test/",
     "inspector_overlay/"
   ],

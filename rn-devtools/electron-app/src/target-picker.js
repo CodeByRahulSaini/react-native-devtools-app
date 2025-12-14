@@ -78,24 +78,6 @@ function escapeHtml(str) {
 }
 
 /**
- * Get a friendly target type label
- * @param {Object} target - Target object
- * @returns {string} Friendly type label
- */
-function getTargetTypeLabel(target) {
-  const type = target.type || 'page';
-  const labels = {
-    page: 'Page',
-    node: 'Node.js',
-    webview: 'WebView',
-    worker: 'Worker',
-    service_worker: 'Service Worker',
-    shared_worker: 'Shared Worker',
-  };
-  return labels[type] || type;
-}
-
-/**
  * Render the list of discovered targets
  * @param {Array} targets - Array of debug targets
  */
@@ -116,17 +98,10 @@ function renderTargets(targets) {
             <span class="target-port">:${target.port}</span>
           </div>
           <div class="target-description">${escapeHtml(target.description || 'No description available')}</div>
+          ${
+            target.url
+              ? `
           <div class="target-meta">
-            <span class="target-meta-item">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="3" width="20" height="14" rx="2"/>
-                <path d="M8 21h8M12 17v4"/>
-              </svg>
-              ${getTargetTypeLabel(target)}
-            </span>
-            ${
-              target.url
-                ? `
             <span class="target-meta-item">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
@@ -134,10 +109,10 @@ function renderTargets(targets) {
               </svg>
               ${escapeHtml(new URL(target.url).hostname || target.url)}
             </span>
-            `
-                : ''
-            }
           </div>
+          `
+              : ''
+          }
         </div>
       `
         )
@@ -169,6 +144,28 @@ function renderTargets(targets) {
 }
 
 /**
+ * Filter out unwanted targets (e.g., Reanimated UI runtime)
+ * @param {Array} targets - Array of debug targets
+ * @returns {Array} Filtered array of targets
+ */
+function filterTargets(targets) {
+  return targets.filter(target => {
+    const title = (target.title || '').toLowerCase();
+    const description = (target.description || '').toLowerCase();
+    const type = (target.type || '').toLowerCase();
+    
+    // Filter out Reanimated UI runtime (check title, description, and type)
+    if (title.includes('reanimated ui runtime') ||
+        description.includes('reanimated ui runtime') ||
+        description.includes('reanimated') && description.includes('c++')) {
+      return false;
+    }
+    
+    return true;
+  });
+}
+
+/**
  * Discover debug targets from Metro bundlers
  */
 async function discoverTargets() {
@@ -180,7 +177,8 @@ async function discoverTargets() {
 
   try {
     const ports = getPorts();
-    discoveredTargets = await window.devtools.discoverTargets(ports);
+    const allTargets = await window.devtools.discoverTargets(ports);
+    discoveredTargets = filterTargets(allTargets);
     renderTargets(discoveredTargets);
   } catch (error) {
     console.error('Failed to discover targets:', error);
