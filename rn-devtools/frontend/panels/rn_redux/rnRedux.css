@@ -1,0 +1,297 @@
+/* Copyright 2025 Rahul Saini. All rights reserved. */
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+/* Copyright 2024 The Chromium Authors. All rights reserved. */
+/* Use of this source code is governed by a BSD-style license that can be */
+/* found in the LICENSE file. */
+
+.rn-redux-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--default-font-family);
+  background: var(--sys-color-cdt-base-container);
+}
+
+/* Toolbar */
+.rn-redux-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--sys-color-divider);
+  background: var(--sys-color-surface);
+}
+
+.rn-redux-toolbar button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--sys-color-outline);
+  border-radius: 4px;
+  background: var(--sys-color-surface);
+  color: var(--sys-color-on-surface);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rn-redux-toolbar button:hover {
+  background: var(--sys-color-surface-variant);
+}
+
+.rn-redux-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rn-redux-filter {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--sys-color-outline);
+  border-radius: 4px;
+  background: var(--sys-color-surface);
+  color: var(--sys-color-on-surface);
+  font-size: 12px;
+}
+
+.rn-redux-filter::placeholder {
+  color: var(--sys-color-on-surface-subtle);
+}
+
+.rn-redux-stats {
+  font-size: 11px;
+  color: var(--sys-color-on-surface-subtle);
+  white-space: nowrap;
+}
+
+/* Content area */
+.rn-redux-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Action list */
+.rn-redux-list {
+  flex: 1;
+  overflow: auto;
+}
+
+.rn-redux-list-header {
+  display: grid;
+  grid-template-columns: 50px 2fr 120px;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--sys-color-divider);
+  background: var(--sys-color-surface);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sys-color-on-surface-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.rn-redux-list-body {
+  min-height: 100%;
+}
+
+.rn-redux-row {
+  display: grid;
+  grid-template-columns: 50px 2fr 120px;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--sys-color-divider);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+  align-items: center;
+}
+
+.rn-redux-row:hover {
+  background: var(--sys-color-state-hover-on-subtle);
+}
+
+.rn-redux-row.selected {
+  background: var(--sys-color-tonal-container);
+}
+
+.rn-redux-index {
+  font-family: var(--monospace-font-family);
+  color: var(--sys-color-on-surface-subtle);
+  font-size: 11px;
+  text-align: right;
+}
+
+.rn-redux-type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sys-color-on-surface);
+  font-weight: 500;
+}
+
+.rn-redux-time {
+  font-family: var(--monospace-font-family);
+  color: var(--sys-color-on-surface-subtle);
+  font-size: 11px;
+  text-align: right;
+}
+
+/* Empty state */
+.rn-redux-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 32px;
+  color: var(--sys-color-on-surface-subtle);
+  text-align: center;
+}
+
+.rn-redux-empty-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.rn-redux-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--sys-color-on-surface);
+}
+
+.rn-redux-empty-description {
+  font-size: 13px;
+  max-width: 280px;
+}
+
+/* Detail panel */
+.rn-redux-detail {
+  width: 400px;
+  border-left: 1px solid var(--sys-color-divider);
+  background: var(--sys-color-surface);
+  overflow: auto;
+}
+
+.rn-redux-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid var(--sys-color-divider);
+}
+
+.rn-redux-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sys-color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.rn-redux-detail-close {
+  padding: 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--sys-color-on-surface-subtle);
+  border-radius: 4px;
+}
+
+.rn-redux-detail-close:hover {
+  background: var(--sys-color-state-hover-on-subtle);
+}
+
+.rn-redux-detail-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--sys-color-divider);
+  flex-wrap: wrap;
+}
+
+.rn-redux-detail-tab {
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: var(--sys-color-on-surface-subtle);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.rn-redux-detail-tab:hover {
+  color: var(--sys-color-on-surface);
+}
+
+.rn-redux-detail-tab.active {
+  color: var(--sys-color-primary);
+  border-bottom-color: var(--sys-color-primary);
+}
+
+.rn-redux-detail-content {
+  padding: 12px;
+}
+
+.rn-redux-detail-section {
+  margin-bottom: 16px;
+}
+
+.rn-redux-detail-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sys-color-on-surface-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.rn-redux-detail-value {
+  font-size: 12px;
+  color: var(--sys-color-on-surface);
+  word-break: break-all;
+}
+
+.rn-redux-detail-body {
+  background: var(--sys-color-cdt-base-container);
+  border: 1px solid var(--sys-color-divider);
+  border-radius: 4px;
+  padding: 12px;
+  font-family: var(--monospace-font-family);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 400px;
+  overflow: auto;
+}
+
+.rn-redux-detail-body.empty {
+  color: var(--sys-color-on-surface-subtle);
+  font-style: italic;
+}
+
+/* JSON container */
+.rn-redux-json-container {
+  padding: 0;
+}
+
+.rn-redux-json {
+  margin: 0;
+  padding: 12px;
+  font-family: var(--monospace-font-family);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--sys-color-on-surface);
+}
+

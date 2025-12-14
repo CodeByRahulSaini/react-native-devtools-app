@@ -52,6 +52,7 @@ devtools_entrypoint("entrypoint") {
     "../../panels/rn_welcome:meta",
     "../../../rn-devtools/frontend/panels/rn_network:meta",
     "../../../rn-devtools/frontend/panels/rn_apollo:meta",
+    "../../../rn-devtools/frontend/panels/rn_redux:meta",
     "../../panels/security:meta",
     "../../panels/sensors:meta",
     "../../panels/timeline:meta",

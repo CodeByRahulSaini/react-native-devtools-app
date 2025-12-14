@@ -4,7 +4,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-export { NetworkPlugin } from './network';
-export { ApolloPlugin } from './apollo';
-export { ReduxPlugin } from './redux';
+import * as RNReduxModel from './RNReduxModel.js';
+import * as RNReduxPanel from './RNReduxPanel.js';
+
+export {RNReduxModel, RNReduxPanel};
 
