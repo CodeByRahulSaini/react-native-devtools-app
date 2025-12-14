@@ -129,8 +129,12 @@ export class NetworkPlugin implements Plugin {
   }
 
   private truncateBody(body: string | undefined): string | undefined {
-    if (!body) return undefined;
-    if (body.length <= this.options.maxBodySize) return body;
+    if (!body){
+      return undefined;
+    }
+    if (body.length <= this.options.maxBodySize) {
+      return body;
+    }
     return body.slice(0, this.options.maxBodySize) + '... [truncated]';
   }
 

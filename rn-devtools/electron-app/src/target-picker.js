@@ -152,15 +152,14 @@ function filterTargets(targets) {
   return targets.filter(target => {
     const title = (target.title || '').toLowerCase();
     const description = (target.description || '').toLowerCase();
-    const type = (target.type || '').toLowerCase();
-    
+
     // Filter out Reanimated UI runtime (check title, description, and type)
     if (title.includes('reanimated ui runtime') ||
         description.includes('reanimated ui runtime') ||
         description.includes('reanimated') && description.includes('c++')) {
       return false;
     }
-    
+
     return true;
   });
 }
