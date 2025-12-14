@@ -4,6 +4,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-export { NetworkPlugin } from './network';
-export { ApolloPlugin } from './apollo';
+import * as RNApolloModel from './RNApolloModel.js';
+import * as RNApolloPanel from './RNApolloPanel.js';
+
+export {RNApolloModel, RNApolloPanel};
 
