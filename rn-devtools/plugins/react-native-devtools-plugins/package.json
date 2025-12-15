@@ -22,7 +22,7 @@
   "author": "Rahul Saini",
   "license": "BSD-3-Clause",
   "peerDependencies": {
-    "react-native": ">=0.70.0"
+    "react-native": ">=0.76.0"
   },
   "devDependencies": {
     "typescript": "^5.3.0"
